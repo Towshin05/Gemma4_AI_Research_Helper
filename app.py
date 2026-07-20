@@ -3,7 +3,7 @@ import streamlit as st
 from config import UPLOAD_DIR
 from modules.pdf_loader import PDFLoader
 from modules.text_splitter import PDFTextSplitter
-
+from modules.context_extractor import ContextExtractor
 
 st.set_page_config(page_title="Research Helper AI")
 
@@ -30,7 +30,7 @@ if uploaded_files and len(uploaded_files) > 5:
 
 loader = PDFLoader()
 splitter = PDFTextSplitter()
-
+context=ContextExtractor()
 
 if uploaded_files:
 
@@ -69,6 +69,16 @@ if uploaded_files:
             if len(text) > 2000:
                 st.info("Only the first 2000 characters are displayed.")
 
+        sections=context.detect_sections(text)
+
+        st.header("🔍 Detected Sections")
+
+        if sections:
+            for section in sections:
+                st.success(f"{section.title()} section detected.")
+        else:
+            st.warning("⚠️ No predefined sections detected in the text.")                
+
         chunks = splitter.split_text(text)
 
         st.success(f"🧩 Total Chunks Created: {len(chunks)}")
@@ -79,3 +89,4 @@ if uploaded_files:
                 f"Chunk {i+1} ({len(chunk)} characters)"
             ):
                 st.write(chunk)
+
