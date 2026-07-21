@@ -1,12 +1,14 @@
 import streamlit as st
 
 from config import UPLOAD_DIR
+from modules import prompt_builder
 from modules.pdf_loader import PDFLoader
 from modules.text_splitter import PDFTextSplitter
 from modules.context_extractor import ContextExtractor
 from modules.embedding_generator import EmbeddingGenerator
-
+from modules.prompt_builder import PromptBuilder
 from modules.chroma_manager import ChromaManager
+from modules.intent_detector import IntentDetector
 st.set_page_config(page_title="Research Helper AI")
 
 st.title("📚 Research Helper AI")
@@ -35,8 +37,8 @@ splitter = PDFTextSplitter()
 context=ContextExtractor()
 embedder=EmbeddingGenerator()
 db=ChromaManager()
-
-
+prompt=PromptBuilder()
+detector=IntentDetector()
 st.success("connection to vector database established successfully!")
 
 if uploaded_files:
@@ -114,3 +116,29 @@ if uploaded_files:
 
         st.success("Stored successfully!")
         st.info(f"Stored collection {db.collection.count()} in the vector database.")
+        
+    st.header("🔎 Ask anything about your Research Paper!")    
+    user_query= st.text_input("Enter your query here:", placeholder="Type your question...") 
+    if user_query:
+    
+        query_embedding= embedder.generate_embeddings([user_query])  
+        st.success(f"🧠 Embeddings generated for the query.")
+        st.write({query_embedding.shape})
+        st.write(query_embedding[0][:10])
+        
+        
+        
+        results=db.search(query_embedding=query_embedding)
+        st.write(results)
+        
+        user_prompt= prompt.build_prompt(
+            question=user_query,
+            documents=results['documents'][0],
+            metadatas=results['metadatas'][0]
+            
+            
+            )
+        
+     
+        
+        print(detector.detect_intent(user_query))

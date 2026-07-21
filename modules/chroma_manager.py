@@ -26,3 +26,11 @@ class ChromaManager:
             ids=id)    
     def collection_count(self):
         return self.collection.count()    
+    
+    def search(self, query_embedding,k_top=5):
+        results=self.collection.query(
+            query_embeddings=query_embedding.tolist(),
+            n_results=k_top,
+        )
+        return results
+        
