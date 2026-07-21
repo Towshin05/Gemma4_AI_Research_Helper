@@ -10,7 +10,6 @@ class ContextExtractor:
             "background",
             "related work",
             "literature review",
-            
             "methodology",
             "materials and methods",
             "experiments",

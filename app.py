@@ -4,7 +4,9 @@ from config import UPLOAD_DIR
 from modules.pdf_loader import PDFLoader
 from modules.text_splitter import PDFTextSplitter
 from modules.context_extractor import ContextExtractor
+from modules.embedding_generator import EmbeddingGenerator
 
+from modules.chroma_manager import ChromaManager
 st.set_page_config(page_title="Research Helper AI")
 
 st.title("📚 Research Helper AI")
@@ -31,6 +33,11 @@ if uploaded_files and len(uploaded_files) > 5:
 loader = PDFLoader()
 splitter = PDFTextSplitter()
 context=ContextExtractor()
+embedder=EmbeddingGenerator()
+db=ChromaManager()
+
+
+st.success("connection to vector database established successfully!")
 
 if uploaded_files:
 
@@ -89,4 +96,21 @@ if uploaded_files:
                 f"Chunk {i+1} ({len(chunk)} characters)"
             ):
                 st.write(chunk)
+                
+                # Generate embeddings for the chunk
+        embeddings= embedder.generate_embeddings(chunks)   
+        
+                
+        st.success(f"🧠 Embeddings generated for  chunks.")
+        st.write({embeddings.shape})
+        for i,embedding in enumerate(embeddings):
+            
+            
+                st.write(embeddings[i][:10])  
+        #add database
+        
+        db.add_documents(
+            chunks=chunks, embeddings=embeddings, paper_name=pdf.name,)        
 
+        st.success("Stored successfully!")
+        st.info(f"Stored collection {db.collection.count()} in the vector database.")
