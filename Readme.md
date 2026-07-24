@@ -65,7 +65,7 @@ Gemma is responsible for
 # Project Structure
 
 ```
-AIResearchHelper/
+ResearchGapAI/
 │
 ├── app.py
 ├── config.py
@@ -99,7 +99,7 @@ AIResearchHelper/
 - Sentence Transformers
 - OpenRouter API
 - Gemma 4
-- PyPDF
+- PyMuPDF
 - HuggingFace Embeddings
 
 ---
@@ -107,9 +107,9 @@ AIResearchHelper/
 # Clone Repository
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/AIResearchHelper.git
+git clone https://github.com/YOUR_USERNAME/Gemma4_AI_Research_Helper.git
 
-cd AIResearchHelper
+cd Gemma4_AI_Research_Helper
 ```
 
 ---
@@ -300,6 +300,7 @@ Supported intents
 - limitations
 - general
 
+
 ---
 
 # Full Paper Reasoning
@@ -360,10 +361,9 @@ Answer
 - Research roadmap generator
 - Related paper recommendation
 - Citation generation
-- Research mentor mode
 - Experiment planning
 - Figure explanation
-- Dataset recommendation
+
 
 ---
 
