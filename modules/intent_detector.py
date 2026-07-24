@@ -47,7 +47,20 @@ class IntentDetector:
         "framework",
         "architecture"
     ],
-
+    
+    "reviewer":[
+         "review",
+                "reviewer",
+                "peer review",
+                "evaluate",
+                "critique",
+                "feedback"
+    ],
+    "research_advisor":[
+        "advise",
+        "how to proceed",
+        "help",
+    ],
     "general": []
 }
     def detect_intent(self, query):

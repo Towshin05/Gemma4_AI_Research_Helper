@@ -7,6 +7,6 @@ class PDFLoader:
         for page in document:
             text+=page.get_text()
 
-
+             
         document.close()    
         return text

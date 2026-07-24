@@ -1,7 +1,8 @@
 import streamlit as st
 
 from config import UPLOAD_DIR
-from modules import prompt_builder
+from ui import UI
+
 from modules.pdf_loader import PDFLoader
 from modules.text_splitter import PDFTextSplitter
 from modules.context_extractor import ContextExtractor
@@ -9,136 +10,248 @@ from modules.embedding_generator import EmbeddingGenerator
 from modules.prompt_builder import PromptBuilder
 from modules.chroma_manager import ChromaManager
 from modules.intent_detector import IntentDetector
-st.set_page_config(page_title="Research Helper AI")
+from modules.response_formatter import ResponseFormatter
+from modules.reasoning_engine import ReasoningEngine
+from modules.gemma_client import GemmaClient
 
-st.title("📚 Research Helper AI")
-
-st.write(
-    """
-Welcome to AI Research Helper!
-
-This tool allows you to upload your research papers in PDF format, extract the text, and split it into manageable chunks for further analysis or processing.
-"""
+# -----------------------------------------
+# Streamlit Config
+# -----------------------------------------
+st.set_page_config(
+    page_title="AI Research Helper",
+    page_icon="📚",
+    layout="wide",
+    initial_sidebar_state="expanded",
 )
 
+DEBUG = False
 
-uploaded_files = st.file_uploader(
-    "Upload your research papers (PDF format)",
-    type=["pdf"],
-    accept_multiple_files=True,
-    help="You can upload at most 5 PDF files at once. Each file will be processed individually."
-)
-if uploaded_files and len(uploaded_files) > 5:
-    st.error("You can upload at most 5 PDF files at once. Please remove some files and try again.")
-    uploaded_files = None  
+# -----------------------------------------
+# Session State
+# -----------------------------------------
+
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+
+if "papers" not in st.session_state:
+    st.session_state.papers = {}
+
+# -----------------------------------------
+# Initialize Modules
+# -----------------------------------------
 
 loader = PDFLoader()
 splitter = PDFTextSplitter()
-context=ContextExtractor()
-embedder=EmbeddingGenerator()
-db=ChromaManager()
-prompt=PromptBuilder()
-detector=IntentDetector()
-st.success("connection to vector database established successfully!")
+context = ContextExtractor()
+embedder = EmbeddingGenerator()
+db = ChromaManager()
+prompt_builder = PromptBuilder()
+detector = IntentDetector()
+formatter = ResponseFormatter()
+reasoner = ReasoningEngine()
+gemma = GemmaClient()
+ui = UI()
+
+# -----------------------------------------
+# UI
+# -----------------------------------------
+
+ui.load_css()
+ui.show_header()
+
+uploaded_files = st.file_uploader(
+    "Upload your research papers",
+    type=["pdf"],
+    accept_multiple_files=True,
+    help="Upload up to 5 research papers."
+)
+
+if uploaded_files and len(uploaded_files) > 5:
+    st.error("Maximum 5 PDFs allowed.")
+    st.stop()
+
+
+
+    
+ui.show_sidebar(uploaded_files,db)
+                
+                
+                
+                
+# -----------------------------------------
+# Process Uploaded PDFs
+# -----------------------------------------
 
 if uploaded_files:
 
     for pdf in uploaded_files:
 
-        # Save uploaded file
+        # Skip if already processed
+        if pdf.name in st.session_state.papers:
+            continue
+
         save_path = UPLOAD_DIR / pdf.name
 
         with open(save_path, "wb") as f:
             f.write(pdf.getbuffer())
 
-        st.success(f"✅ {pdf.name} uploaded successfully!")
-
-        
         text = loader.extract_text(save_path)
 
-       
-        st.subheader(f"📄 {pdf.name}")
-
-        col1, col2, col3 = st.columns(3)
-
-        with col1:
-            st.metric("Characters", len(text))
-
-        with col2:
-            st.metric("Words", len(text.split()))
-
-        with col3:
-            st.metric("File Size", f"{pdf.size / (1024 * 1024):.2f} MB")
-
-       
-        with st.expander("📖 View Extracted Text"):
-
-            st.write(text[:2000])
-
-            if len(text) > 2000:
-                st.info("Only the first 2000 characters are displayed.")
-
-        sections=context.detect_sections(text)
-
-        st.header("🔍 Detected Sections")
-
-        if sections:
-            for section in sections:
-                st.success(f"{section.title()} section detected.")
-        else:
-            st.warning("⚠️ No predefined sections detected in the text.")                
+        st.session_state.papers[pdf.name] = text
 
         chunks = splitter.split_text(text)
 
-        st.success(f"🧩 Total Chunks Created: {len(chunks)}")
+        embeddings = embedder.generate_embeddings(chunks)
 
-        for i, chunk in enumerate(chunks):
-
-            with st.expander(
-                f"Chunk {i+1} ({len(chunk)} characters)"
-            ):
-                st.write(chunk)
-                
-                # Generate embeddings for the chunk
-        embeddings= embedder.generate_embeddings(chunks)   
-        
-                
-        st.success(f"🧠 Embeddings generated for  chunks.")
-        st.write({embeddings.shape})
-        for i,embedding in enumerate(embeddings):
-            
-            
-                st.write(embeddings[i][:10])  
-        #add database
-        
         db.add_documents(
-            chunks=chunks, embeddings=embeddings, paper_name=pdf.name,)        
+            chunks=chunks,
+            embeddings=embeddings,
+            paper_name=pdf.name
+        )
 
-        st.success("Stored successfully!")
-        st.info(f"Stored collection {db.collection.count()} in the vector database.")
-        
-    st.header("🔎 Ask anything about your Research Paper!")    
-    user_query= st.text_input("Enter your query here:", placeholder="Type your question...") 
-    if user_query:
-    
-        query_embedding= embedder.generate_embeddings([user_query])  
-        st.success(f"🧠 Embeddings generated for the query.")
-        st.write({query_embedding.shape})
-        st.write(query_embedding[0][:10])
-        
-        
-        
-        results=db.search(query_embedding=query_embedding)
-        st.write(results)
-        
-        user_prompt= prompt.build_prompt(
+# -----------------------------------------
+# Chat Section
+# -----------------------------------------
+
+st.divider()
+st.header("💬 Ask Questions")
+
+if not st.session_state.papers:
+    st.warning("Upload at least one research paper to start chatting.")
+    st.stop()
+# Display previous conversation
+
+for message in st.session_state.messages:
+
+    avatar = "👤" if message["role"] == "user" else "🤖"
+
+    with st.chat_message(message["role"], avatar=avatar):
+        st.markdown(message["content"])
+
+# -----------------------------------------
+# User Input
+# -----------------------------------------
+
+user_query = st.chat_input(
+    "Ask anything about your uploaded papers..."
+)
+
+if user_query:
+
+    # show user instantly
+    st.session_state.messages.append(
+        {
+            "role": "user",
+            "content": user_query
+        }
+    )
+
+    with st.chat_message("user", avatar="👤"):
+        st.markdown(user_query)
+
+    intent = detector.detect_intent(user_query)
+
+
+
+    # =====================================
+    # FULL PAPER REASONING
+    # =====================================
+
+    if reasoner.requires_full_papers(intent):
+
+        documents = list(st.session_state.papers.values())
+
+        metadatas = [
+            {
+                "paper_name": name
+            }
+            for name in st.session_state.papers.keys()
+        ]
+
+        prompt = prompt_builder.build_prompt(
+            intent=intent,
             question=user_query,
-            documents=results['documents'][0],
-            metadatas=results['metadatas'][0]
-            
-            
-            )
+            documents=documents,
+            metadatas=metadatas,
+            messages=st.session_state.messages
+        )
+
+    # =====================================
+    # NORMAL RAG
+    # =====================================
+
+    else:
+
+        query_embedding = embedder.generate_embeddings(
+            [user_query]
+        )
+
+        results = db.search(query_embedding)
         
-     
-        
-        print(detector.detect_intent(user_query))
+        if not results["documents"] or not results["documents"][0]:
+            st.error("No relevant content found in the uploaded papers.")
+            st.stop()
+
+        prompt = prompt_builder.build_prompt(
+            intent=intent,
+            question=user_query,
+            documents=results["documents"][0],
+            metadatas=results["metadatas"][0],
+            messages=st.session_state.messages
+        )
+
+    # =====================================
+    # Gemma
+    # =====================================
+
+    with st.chat_message("assistant", avatar="🤖"):
+        with st.spinner("Gemma is analyzing the papers..."):
+            try:
+                
+
+                answer = gemma.generate_response(prompt)
+
+                if not answer:
+                    answer = "No response generated."
+            except Exception as e:
+                answer= f"Error while generating response:\n\n{e}"      
+
+            st.markdown(answer)
+
+
+    # Optional formatting
+
+    if not reasoner.requires_full_papers(intent):
+
+        answer = formatter.format_response(
+            answer,
+            results["metadatas"][0]
+        )["answer"]
+    
+    st.session_state.messages.append(
+    {
+        "role": "assistant",
+        "content": answer
+    }
+)
+    # Show assistant message immediately
+
+    # with st.chat_message("assistant", avatar="🤖"):
+    #     with st.spinner("Gemma is analyzing the papers..."):
+    #         st.markdown(answer)
+
+    # st.session_state.messages.append(
+    #     {
+    #         "role": "assistant",
+    #         "content": answer
+    #     }
+    # )
+
+
+
+    # ===================================
+# -----------------------------------------
+# Footer
+# -----------------------------------------
+
+# ui.footer()

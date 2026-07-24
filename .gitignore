@@ -1,0 +1,18 @@
+.env
+# Environment variables
+
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Streamlit
+.streamlit/
+
+# Chroma Database
+chroma_db/
+vector_db/
+
+# Uploaded files
+data/
