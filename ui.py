@@ -244,9 +244,4 @@ class UI:
                 unsafe_allow_html=True,
             )
 
-    # Footer
-
-    def footer(self):
-        st.divider()
-
-        st.caption("Powered by Gemma 4 • ChromaDB • Sentence Transformers • Streamlit")
+    

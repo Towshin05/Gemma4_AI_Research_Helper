@@ -9,7 +9,7 @@ class PDFTextSplitter:
             chunk_overlap=chunk_overlap
         )
 
-    # FIXED: This must align with __init__ to be a proper class method
+    
     def split_text(self, text):
         chunks = self.splitter.split_text(text)
         return chunks
