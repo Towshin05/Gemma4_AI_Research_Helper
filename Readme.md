@@ -460,6 +460,15 @@ https://github.com/Towshin05
 
 ---
 
+# Contributor
+
+**Arupa Barua**
+Department of Computer Science and Engineering
+
+Chittagong University of Engineering & Technology (CUET)
+
+Bangladesh
+---
 # 📄 License
 
 This project is licensed under the **MIT License**.
