@@ -390,7 +390,7 @@ Which methodology would you choose for a new project and why?
         {context}
         User Question:
         {question}
-        Chat History:
+        Previous Conversation:
                 {chat_history}      
         Answer:
         """
