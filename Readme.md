@@ -12,7 +12,7 @@
 
 ## 📖 Project Overview
 
-AI Research Helper is an intelligent literature review assistant designed to help students, researchers, and academics analyze scientific papers more efficiently.
+AI Research Helper is an intelligent research paper review assistant designed to help students, researchers, and academics analyze scientific papers more efficiently.
 
 Instead of manually reading hundreds of pages, users can upload multiple research papers and interact with them using natural language.
 
@@ -281,18 +281,7 @@ This hybrid reasoning strategy improves both efficiency and reasoning quality.
 
 ---
 
-# Technologies Used
 
-- Python
-- Streamlit
-- ChromaDB
-- Sentence Transformers
-- OpenRouter API
-- Gemma 4
-- PyMuPDF
-- HuggingFace Embeddings
-
----
 
 # 🚀 Installation
 
@@ -386,7 +375,7 @@ OPENROUTER_API_KEY=your_api_key_here
 
 ---
 
-# ▶️ Run the Application
+#  Run the Application
 
 ```bash
 streamlit run app.py
@@ -397,8 +386,6 @@ Open your browser:
 ```
 http://localhost:8501
 ```
-
-
 
 ---
 
@@ -428,7 +415,7 @@ Users can ask questions naturally, such as:
 
 ---
 
-# 🔮 Future Roadmap
+#  Future Roadmap
 
 Planned improvements include:
 
@@ -479,7 +466,7 @@ This project is licensed under the **MIT License**.
 
 ---
 
-# 🙏 Acknowledgements
+#  Acknowledgements
 
 This project was developed using:
 
