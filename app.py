@@ -49,12 +49,23 @@ prompt_builder = PromptBuilder()
 detector = IntentDetector()
 formatter = ResponseFormatter()
 reasoner = ReasoningEngine()
-gemma = GemmaClient()
+
+
+# Initialize GemmaClient only when needed (lazy loading)
+@st.cache_resource
+def get_gemma_client():
+    return GemmaClient()
+
+
+gemma = get_gemma_client()
+
+
 ui = UI()
 
 # -----------------------------------------
 # UI
 # -----------------------------------------
+
 
 ui.load_css()
 ui.show_header()
@@ -63,7 +74,7 @@ uploaded_files = st.file_uploader(
     "Upload your research papers",
     type=["pdf"],
     accept_multiple_files=True,
-    help="Upload up to 5 research papers."
+    help="Upload up to 5 research papers.",
 )
 
 if uploaded_files and len(uploaded_files) > 5:
@@ -71,13 +82,9 @@ if uploaded_files and len(uploaded_files) > 5:
     st.stop()
 
 
+ui.show_sidebar(uploaded_files, db)
 
-    
-ui.show_sidebar(uploaded_files,db)
-                
-                
-                
-                
+
 # -----------------------------------------
 # Process Uploaded PDFs
 # -----------------------------------------
@@ -103,11 +110,7 @@ if uploaded_files:
 
         embeddings = embedder.generate_embeddings(chunks)
 
-        db.add_documents(
-            chunks=chunks,
-            embeddings=embeddings,
-            paper_name=pdf.name
-        )
+        db.add_documents(chunks=chunks, embeddings=embeddings, paper_name=pdf.name)
 
 # -----------------------------------------
 # Chat Section
@@ -132,26 +135,17 @@ for message in st.session_state.messages:
 # User Input
 # -----------------------------------------
 
-user_query = st.chat_input(
-    "Ask anything about your uploaded papers..."
-)
+user_query = st.chat_input("Ask anything about your uploaded papers...")
 
 if user_query:
 
     # show user instantly
-    st.session_state.messages.append(
-        {
-            "role": "user",
-            "content": user_query
-        }
-    )
+    st.session_state.messages.append({"role": "user", "content": user_query})
 
     with st.chat_message("user", avatar="👤"):
         st.markdown(user_query)
 
     intent = detector.detect_intent(user_query)
-
-
 
     # =====================================
     # FULL PAPER REASONING
@@ -161,19 +155,14 @@ if user_query:
 
         documents = list(st.session_state.papers.values())
 
-        metadatas = [
-            {
-                "paper_name": name
-            }
-            for name in st.session_state.papers.keys()
-        ]
+        metadatas = [{"paper_name": name} for name in st.session_state.papers.keys()]
 
         prompt = prompt_builder.build_prompt(
             intent=intent,
             question=user_query,
             documents=documents,
             metadatas=metadatas,
-            messages=st.session_state.messages
+            messages=st.session_state.messages,
         )
 
     # =====================================
@@ -182,12 +171,10 @@ if user_query:
 
     else:
 
-        query_embedding = embedder.generate_embeddings(
-            [user_query]
-        )
+        query_embedding = embedder.generate_embeddings([user_query])
 
         results = db.search(query_embedding)
-        
+
         if not results["documents"] or not results["documents"][0]:
             st.error("No relevant content found in the uploaded papers.")
             st.stop()
@@ -197,7 +184,7 @@ if user_query:
             question=user_query,
             documents=results["documents"][0],
             metadatas=results["metadatas"][0],
-            messages=st.session_state.messages
+            messages=st.session_state.messages,
         )
 
     # =====================================
@@ -207,33 +194,23 @@ if user_query:
     with st.chat_message("assistant", avatar="🤖"):
         with st.spinner("Gemma is analyzing the papers..."):
             try:
-                
 
                 answer = gemma.generate_response(prompt)
 
                 if not answer:
                     answer = "No response generated."
             except Exception as e:
-                answer= f"Error while generating response:\n\n{e}"      
+                answer = f"Error while generating response:\n\n{e}"
 
             st.markdown(answer)
-
 
     # Optional formatting
 
     if not reasoner.requires_full_papers(intent):
 
-        answer = formatter.format_response(
-            answer,
-            results["metadatas"][0]
-        )["answer"]
-    
-    st.session_state.messages.append(
-    {
-        "role": "assistant",
-        "content": answer
-    }
-)
+        answer = formatter.format_response(answer, results["metadatas"][0])["answer"]
+
+    st.session_state.messages.append({"role": "assistant", "content": answer})
     # Show assistant message immediately
 
     # with st.chat_message("assistant", avatar="🤖"):
@@ -246,8 +223,6 @@ if user_query:
     #         "content": answer
     #     }
     # )
-
-
 
     # ===================================
 # -----------------------------------------
