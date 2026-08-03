@@ -31,7 +31,7 @@ class GemmaClient:
         load_dotenv()
 
         self.client = OpenAI(
-            api_key=os.secrets("OPENROUTER_API_KEY"),
+            api_key=st.secrets("OPENROUTER_API_KEY"),
             base_url="https://openrouter.ai/api/v1",
         )
 
